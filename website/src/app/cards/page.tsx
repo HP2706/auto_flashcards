@@ -9,6 +9,7 @@ export default function CardsPage() {
   const [groups, setGroups] = useState<string[]>([]);
   const [group, setGroup] = useState<string>("");
   const [q, setQ] = useState("");
+  
 
   const refresh = async (g = group) => {
     const p = new URLSearchParams();
@@ -56,6 +57,7 @@ export default function CardsPage() {
             onChange={(e) => setQ(e.target.value)}
             className="search"
           />
+          <a className="link" href={`/cards/new${group ? `?group=${encodeURIComponent(group)}` : ''}`}>+ New</a>
         </div>
         <div className="status">Cards: {filtered.length}</div>
       </div>

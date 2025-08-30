@@ -18,6 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/cards">Cards</a>
               <a href="/about">About</a>
               <a href="/stats">Stats</a>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <a href="/cards/new">New</a>
+              <a href="/groups/new">New Group</a>
             </nav>
           </header>
           {children}

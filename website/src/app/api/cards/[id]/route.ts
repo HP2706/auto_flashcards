@@ -33,3 +33,16 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
     return new Response("Failed to save", { status: 500 });
   }
 }
+
+export async function DELETE(_req: NextRequest, ctx: { params: { id: string } }) {
+  try {
+    const { id } = ctx.params;
+    const cards = loadAllCards();
+    const card = cards.find((c) => c.id === id);
+    if (!card) return new Response("Not found", { status: 404 });
+    fs.unlinkSync(card.path);
+    return Response.json({ ok: true });
+  } catch (e) {
+    return new Response("Failed to delete", { status: 500 });
+  }
+}

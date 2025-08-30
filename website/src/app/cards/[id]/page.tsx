@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ClipboardEvent } from "react";
 import { mdToHtml } from "@/lib/markdown";
 import { GradeSeries, TimeSeries } from "@/components/charts";
 
@@ -32,8 +33,51 @@ export default function CardDetail({ params }: { params: { id: string } }) {
     });
   }, [params.id]);
 
+  // If opened with ?edit=1, enter edit mode directly
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('edit') === '1') setEditing(true);
+    }
+  }, []);
+
   const frontHtml = useMemo(() => (editing ? mdToHtml(front) : card ? mdToHtml(card.front) : ""), [card, editing, front]);
   const backHtml = useMemo(() => (editing ? mdToHtml(back) : card ? mdToHtml(card.back) : ""), [card, editing, back]);
+
+  const insertAtCursor = (el: HTMLTextAreaElement, text: string) => {
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    const next = `${before}${text}${after}`;
+    const caret = start + text.length;
+    return { next, caret };
+  };
+
+  async function handlePaste(e: ClipboardEvent<HTMLTextAreaElement>, which: "front" | "back") {
+    const items = e.clipboardData?.items || [];
+    for (const it of items) {
+      if (it.kind === "file") {
+        const file = it.getAsFile();
+        if (file && file.size > 0) {
+          e.preventDefault();
+          const fd = new FormData();
+          fd.append("file", file, file.name || "pasted.png");
+          const r = await fetch("/api/upload", { method: "POST", body: fd });
+          if (r.ok) {
+            const data = await r.json();
+            const md = data.isImage ? `![Image](${data.path})` : `[File](${data.path})`;
+            const el = e.target as HTMLTextAreaElement;
+            const { next, caret } = insertAtCursor(el, md);
+            if (which === "front") setFront(next);
+            else setBack(next);
+            requestAnimationFrame(() => { try { el.selectionStart = el.selectionEnd = caret; } catch {} });
+          }
+          return;
+        }
+      }
+    }
+  }
 
   const onSave = async () => {
     const r = await fetch(`/api/cards/${encodeURIComponent(params.id)}`, {
@@ -53,6 +97,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
       <div className="toolbar">
         <div className="controls">
           <a className="link" href="/cards">← Back to cards</a>
+          <a className="link" href="/cards/new">+ New</a>
         </div>
         <div className="status">{card?.group || "default"}</div>
       </div>
@@ -64,7 +109,15 @@ export default function CardDetail({ params }: { params: { id: string } }) {
           <div className="toolbar">
             <div className="controls" style={{ gap: 8 }}>
               {!editing ? (
-                <button className="primary" onClick={() => setEditing(true)}>Edit</button>
+                <>
+                  <button className="primary" onClick={() => setEditing(true)}>Edit</button>
+                  <button className="again" onClick={async () => {
+                    if (!card) return;
+                    if (!confirm(`Delete card ${card.id}?`)) return;
+                    const r = await fetch(`/api/cards/${encodeURIComponent(card.id)}`, { method: 'DELETE' });
+                    if (r.ok) window.location.href = '/cards';
+                  }}>Delete</button>
+                </>
               ) : (
                 <>
                   <button onClick={() => setEditing(false)}>Cancel</button>
@@ -105,9 +158,9 @@ export default function CardDetail({ params }: { params: { id: string } }) {
                   <label className="label" style={{ display: 'block', marginBottom: 6 }}>Title</label>
                   <input value={title} onChange={(e) => setTitle(e.target.value)} className="search" style={{ width: '100%' }} />
                   <label className="label" style={{ display: 'block', marginTop: 10 }}>Front</label>
-                  <textarea value={front} onChange={(e) => setFront(e.target.value)} style={{ width: '100%', height: 180 }} className="search" />
+                  <textarea value={front} onChange={(e) => setFront(e.target.value)} onPaste={(e) => handlePaste(e, 'front')} style={{ width: '100%', height: 180 }} className="search" />
                   <label className="label" style={{ display: 'block', marginTop: 10 }}>Back</label>
-                  <textarea value={back} onChange={(e) => setBack(e.target.value)} style={{ width: '100%', height: 180 }} className="search" />
+                  <textarea value={back} onChange={(e) => setBack(e.target.value)} onPaste={(e) => handlePaste(e, 'back')} style={{ width: '100%', height: 180 }} className="search" />
                 </div>
                 <div>
                   <div className="card-title">Preview</div>
