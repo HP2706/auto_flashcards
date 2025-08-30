@@ -1,0 +1,7 @@
+website/markdown_cards/*
+website/public/files/*
+website/data/*
+website/public/*
+website/node_modules/*
+website/.next/*
+xml_data/*
