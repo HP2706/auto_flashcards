@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:debug": "NEXT_PUBLIC_DEBUG_MD=1 DEBUG_CARDS=1 next dev",
+    "dev:open": "bash scripts/dev-open.sh",
     "test:cards": "node scripts/test_extract_section.js",
     "build": "next build",
     "start": "next start",

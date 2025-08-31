@@ -10,8 +10,8 @@ Overview
 Getting Started
 
 - Install deps: `npm install`
-- Dev server: `npm run dev`
-- Open `http://localhost:3000`
+- One-step dev (auto-open): `npm run dev:open`
+- Or manual: `npm run dev` then open `http://localhost:3000`
 
 Folder Structure
 
