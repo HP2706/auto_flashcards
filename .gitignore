@@ -9,3 +9,4 @@ blobs/
 *.xml
 *.DS_Store
 *.zip
+.vscode/*

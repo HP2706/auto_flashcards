@@ -22,10 +22,9 @@ function makeFakeHistory(): ReviewLog[] {
   return out.sort((a, b) => a.ts - b.ts);
 }
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const fake = url.searchParams.get("fake") === "1";
-  const logs = fake ? makeFakeHistory() : readHistory();
+  const logs = fake ? makeFakeHistory() : await readHistory();
   return Response.json({ history: logs });
 }
-

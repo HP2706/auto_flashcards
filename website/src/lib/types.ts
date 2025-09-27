@@ -3,7 +3,9 @@ export type Card = {
   title?: string;
   front: string;
   back: string;
-  path: string; // absolute path on disk
+  frontImages?: string[]; // Array of image URLs for front
+  backImages?: string[];  // Array of image URLs for back
+  path: string; // absolute path on disk (legacy, will be removed)
   group?: string; // relative folder name under cards root
 };
 

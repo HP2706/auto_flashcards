@@ -1,15 +1,18 @@
 import { NextRequest } from "next/server";
-import { loadAllCards } from "@/lib/cards";
-import fs from "node:fs";
-import path from "node:path";
-import { listCardFiles, parseCardFromFile } from "@/lib/cards";
+import { loadAllCards, saveCard } from "@/lib/cards";
 
-export function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const group = url.searchParams.get("group");
-  const cards = loadAllCards().filter((c) => (group ? c.group === group : true));
-  const groups = Array.from(new Set(loadAllCards().map((c) => c.group).filter(Boolean)));
-  return Response.json({ cards, groups });
+export async function GET(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const group = url.searchParams.get("group");
+    const cards = await loadAllCards();
+    const filteredCards = cards.filter((c) => (group ? c.group === group : true));
+    const groups = Array.from(new Set(cards.map((c) => c.group).filter(Boolean)));
+    return Response.json({ cards: filteredCards, groups });
+  } catch (error) {
+    console.error('Failed to load cards:', error);
+    return new Response("Failed to load cards", { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -19,35 +22,32 @@ export async function POST(req: NextRequest) {
     if (typeof front !== "string" || typeof back !== "string") {
       return new Response("Invalid body", { status: 400 });
     }
-    const cardsRoot = (() => {
-      const dir = path.resolve(process.cwd(), "markdown_cards");
-      if (fs.existsSync(dir)) return dir;
-      return path.resolve(process.cwd(), "..", "markdown_cards");
-    })();
-    const dir = group ? path.join(cardsRoot, group) : cardsRoot;
-    fs.mkdirSync(dir, { recursive: true });
 
+    // Generate unique ID
     const nameFromTitle = (t: string) => (t || "").toLowerCase()
       .replace(/[^a-z0-9\-_\s]/g, "_")
       .replace(/\s+/g, "_")
       .replace(/_+/g, "_")
       .slice(0, 80) || "card";
     const slug = nameFromTitle(title || front.split("\n")[0]);
-    let base = slug;
-    let idx = 0;
-    let filePath = path.join(dir, `${base}.md`);
-    while (fs.existsSync(filePath)) {
-      idx += 1;
-      filePath = path.join(dir, `${base}_${idx}.md`);
+    const id = `${slug}_${Date.now()}.md`;
+
+    const card = {
+      id,
+      title: title?.trim() || (front.split("\n")[0] || "New Card"),
+      front: front.trim(),
+      back: back.trim(),
+      group: group?.trim() || undefined
+    };
+
+    const success = await saveCard(card);
+    if (!success) {
+      return new Response("Failed to save card", { status: 500 });
     }
 
-    const fileTitle = title && title.trim() ? title.trim() : (front.split("\n")[0] || "New Card");
-    const contents = `# ${fileTitle}\n\n## Front\n${front.trim()}\n\n## Back\n${back.trim()}\n`;
-    fs.writeFileSync(filePath, contents, "utf-8");
-
-    const card = parseCardFromFile(filePath);
     return Response.json({ ok: true, card });
   } catch (e) {
+    console.error('Failed to create card:', e);
     return new Response("Failed to create", { status: 500 });
   }
 }

@@ -1,19 +1,23 @@
 import { NextRequest } from "next/server";
-import { loadAllCards, parseCardFromFile } from "@/lib/cards";
-import fs from "node:fs";
+import { loadAllCards, saveCard, deleteCard } from "@/lib/cards";
 
-export function GET(_req: NextRequest, ctx: { params: { id: string } }) {
-  const { id } = ctx.params;
-  const cards = loadAllCards();
-  const card = cards.find((c) => c.id === id);
-  if (!card) return new Response("Not found", { status: 404 });
-  return Response.json({ card });
+export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
+  try {
+    const { id } = ctx.params;
+    const cards = await loadAllCards();
+    const card = cards.find((c) => c.id === id);
+    if (!card) return new Response("Not found", { status: 404 });
+    return Response.json({ card });
+  } catch (error) {
+    console.error('Failed to get card:', error);
+    return new Response("Failed to get card", { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
   try {
     const { id } = ctx.params;
-    const cards = loadAllCards();
+    const cards = await loadAllCards();
     const card = cards.find((c) => c.id === id);
     if (!card) return new Response("Not found", { status: 404 });
 
@@ -23,13 +27,21 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
       return new Response("Invalid body", { status: 400 });
     }
 
-    const newTitle = (title ?? card.title ?? card.id).toString();
-    const contents = `# ${newTitle}\n\n## Front\n${front.trim()}\n\n## Back\n${back.trim()}\n`;
-    fs.writeFileSync(card.path, contents, "utf-8");
+    const updatedCard = {
+      ...card,
+      title: title?.trim() || card.title,
+      front: front.trim(),
+      back: back.trim(),
+    };
 
-    const updated = parseCardFromFile(card.path);
-    return Response.json({ ok: true, card: updated });
+    const success = await saveCard(updatedCard);
+    if (!success) {
+      return new Response("Failed to save card", { status: 500 });
+    }
+
+    return Response.json({ ok: true, card: updatedCard });
   } catch (e) {
+    console.error('Failed to save card:', e);
     return new Response("Failed to save", { status: 500 });
   }
 }
@@ -37,12 +49,18 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
 export async function DELETE(_req: NextRequest, ctx: { params: { id: string } }) {
   try {
     const { id } = ctx.params;
-    const cards = loadAllCards();
+    const cards = await loadAllCards();
     const card = cards.find((c) => c.id === id);
     if (!card) return new Response("Not found", { status: 404 });
-    fs.unlinkSync(card.path);
+    
+    const success = await deleteCard(id);
+    if (!success) {
+      return new Response("Failed to delete card", { status: 500 });
+    }
+    
     return Response.json({ ok: true });
   } catch (e) {
+    console.error('Failed to delete card:', e);
     return new Response("Failed to delete", { status: 500 });
   }
 }
