@@ -9,13 +9,18 @@ export default function AuthCallback() {
   useEffect(() => {
     async function run() {
       try {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-        if (error) {
-          setError(error.message);
-          return;
+        const hasHashToken = typeof window !== 'undefined' && window.location.hash.includes('access_token');
+        if (hasHashToken) {
+          // Handle implicit flow (hash fragment)
+          const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+          if (error) throw error;
+        } else {
+          // Handle PKCE/code flow (query param)
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+          if (error) throw error;
         }
         // Redirect home after successful session establishment
-        window.location.replace("/");
+        window.location.replace('/');
       } catch (e: any) {
         setError(e?.message || String(e));
       }
@@ -30,4 +35,3 @@ export default function AuthCallback() {
     </main>
   );
 }
-

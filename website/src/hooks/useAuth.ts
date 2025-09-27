@@ -24,6 +24,8 @@ export function useAuth() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
+        // Prefer PKCE/code flow in production; callback also handles implicit
+        flowType: 'pkce',
         redirectTo: typeof window !== 'undefined' ? `${location.origin}/auth/callback` : undefined,
         queryParams: { prompt: 'select_account' },
       },
@@ -38,4 +40,3 @@ export function useAuth() {
 
   return { signUp, signIn, signInWithGoogle, signOut };
 }
-
