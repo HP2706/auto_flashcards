@@ -7,26 +7,29 @@ export default function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function run() {
-      try {
-        const hasHashToken = typeof window !== 'undefined' && window.location.hash.includes('access_token');
-        if (!hasHashToken) {
-          // Handle PKCE/code flow (query param). If this isn't a PKCE URL, the
-          // client will throw and we fall back to implicit/no-op handling.
-          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-          if (error) throw error;
-        } else {
-          // For implicit flow, the Supabase client auto-detects and stores the
-          // session on initialization. We can optionally wait a tick.
-          await new Promise((r) => setTimeout(r, 50));
-        }
-        // Redirect home after successful session establishment
+    let cancelled = false;
+
+    // The Supabase client is configured with detectSessionInUrl=true, so it will
+    // automatically handle both implicit and PKCE callbacks on initialization.
+    // Here we just wait until a session exists, then redirect.
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session) {
         window.location.replace('/');
-      } catch (e: any) {
-        setError(e?.message || String(e));
       }
-    }
-    run();
+    }).catch((e) => setError(e?.message || String(e)));
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      if (cancelled) return;
+      if (session) {
+        window.location.replace('/');
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription?.unsubscribe();
+    };
   }, []);
 
   return (
