@@ -10,14 +10,15 @@ export default function AuthCallback() {
     async function run() {
       try {
         const hasHashToken = typeof window !== 'undefined' && window.location.hash.includes('access_token');
-        if (hasHashToken) {
-          // Handle implicit flow (hash fragment)
-          const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-          if (error) throw error;
-        } else {
-          // Handle PKCE/code flow (query param)
+        if (!hasHashToken) {
+          // Handle PKCE/code flow (query param). If this isn't a PKCE URL, the
+          // client will throw and we fall back to implicit/no-op handling.
           const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
           if (error) throw error;
+        } else {
+          // For implicit flow, the Supabase client auto-detects and stores the
+          // session on initialization. We can optionally wait a tick.
+          await new Promise((r) => setTimeout(r, 50));
         }
         // Redirect home after successful session establishment
         window.location.replace('/');

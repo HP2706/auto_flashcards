@@ -25,12 +25,26 @@ if (!supabaseUrl || !supabaseKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl as string, supabaseKey as string)
+export const supabase = createClient(supabaseUrl as string, supabaseKey as string, {
+  auth: {
+    // Use PKCE flow in the browser; implicit will still be handled in callback if encountered
+    flowType: 'pkce',
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+})
 
 export function createServerSupabase(authHeader?: string) {
   return createClient(supabaseUrl as string, supabaseKey as string, {
     global: {
       headers: authHeader ? { Authorization: authHeader } : undefined,
+    },
+    auth: {
+      flowType: 'pkce',
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false, // not applicable server-side
     },
   })
 }
