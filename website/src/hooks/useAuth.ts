@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import { getURL } from "@/lib/url";
+import { getURL } from "../lib/url";
 
 export function useAuth() {
   async function signUp(email: string, password: string, displayName?: string) {
