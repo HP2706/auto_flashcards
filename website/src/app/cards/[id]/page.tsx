@@ -66,7 +66,8 @@ export default function CardDetail({ params }: { params: { id: string } }) {
           const r = await fetch("/api/upload", { method: "POST", body: fd });
           if (r.ok) {
             const data = await r.json();
-            const md = data.isImage ? `![Image](${data.path})` : `[File](${data.path})`;
+            const link = data.url || data.path; // prefer absolute url
+            const md = data.isImage ? `![Image](${link})` : `[File](${link})`;
             const el = e.target as HTMLTextAreaElement;
             const { next, caret } = insertAtCursor(el, md);
             if (which === "front") setFront(next);
@@ -153,7 +154,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
           ) : (
             <div className="card">
               <div className="card-title">Edit: {card.id}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label className="label" style={{ display: 'block', marginBottom: 6 }}>Title</label>
                   <input value={title} onChange={(e) => setTitle(e.target.value)} className="search" style={{ width: '100%' }} />

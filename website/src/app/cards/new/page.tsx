@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ClipboardEvent } from "react";
+import { mdToHtml } from "@/lib/markdown";
 
 function useQuery() {
   const [q, setQ] = useState<URLSearchParams>(new URLSearchParams());
@@ -46,7 +47,8 @@ export default function NewCardPage() {
           const r = await fetch("/api/upload", { method: "POST", body: fd });
           if (r.ok) {
             const data = await r.json();
-            const md = data.isImage ? `![Image](${data.path})` : `[File](${data.path})`;
+            const link = data.url || data.path; // prefer absolute url
+            const md = data.isImage ? `![Image](${link})` : `[File](${link})`;
             const el = e.target as HTMLTextAreaElement;
             const { next, caret } = insertAtCursor(el, md);
             if (which === "front") setFront(next);
@@ -74,6 +76,9 @@ export default function NewCardPage() {
     }
   };
 
+  const frontHtml = useMemo(() => mdToHtml(front), [front]);
+  const backHtml = useMemo(() => mdToHtml(back), [back]);
+
   return (
     <main className="container">
       <div className="toolbar">
@@ -85,7 +90,7 @@ export default function NewCardPage() {
 
       <div className="card">
         <div className="card-title">Create New Card</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
             <label className="label" style={{ display: 'block', marginBottom: 6 }}>Title</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className="search" style={{ width: '100%' }} />
@@ -99,6 +104,12 @@ export default function NewCardPage() {
               <button onClick={() => { window.location.href = '/cards'; }}>Cancel</button>
               <button className="primary" disabled={saving} onClick={onSave}>{saving ? 'Saving…' : 'Save'}</button>
             </div>
+          </div>
+          <div>
+            <div className="card-title">Preview</div>
+            <div className="card-body" dangerouslySetInnerHTML={{ __html: frontHtml }} />
+            <hr style={{ borderColor: '#262c46', margin: '12px 0' }} />
+            <div className="card-body" dangerouslySetInnerHTML={{ __html: backHtml }} />
           </div>
         </div>
       </div>

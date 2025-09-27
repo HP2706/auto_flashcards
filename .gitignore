@@ -5,3 +5,7 @@ website/public/*
 website/node_modules/*
 website/.next/*
 xml_data/*
+blobs/
+*.xml
+*.DS_Store
+*.zip
