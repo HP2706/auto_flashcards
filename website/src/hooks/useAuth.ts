@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
+import { getURL } from "@/lib/url";
 
 export function useAuth() {
   async function signUp(email: string, password: string, displayName?: string) {
@@ -21,10 +22,13 @@ export function useAuth() {
   }
 
   async function signInWithGoogle() {
+    const baseUrl = getURL();
+    const redirectTo = `${baseUrl}auth/callback`;
+    console.log('[auth] OAuth redirect URL:', redirectTo);
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: typeof window !== 'undefined' ? `${location.origin}/auth/callback` : undefined,
+        redirectTo,
         queryParams: { prompt: 'select_account' },
       },
     });
