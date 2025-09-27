@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BarChart as BarChartX, TimeSeries as TimeSeriesX, GradeSeries } from "@/components/charts";
+import { authedFetch } from "@/lib/authFetch";
+import RequireAuth from "@/components/RequireAuth";
 
 type ReviewLog = { cardId: string; ts: number; grade: string; durationMs?: number };
 type Card = { id: string; title?: string; group?: string };
@@ -28,8 +30,8 @@ export default function StatsPage() {
 
   const load = async () => {
     const [cardsRes, histRes] = await Promise.all([
-      fetch(`/api/cards${group ? `?group=${encodeURIComponent(group)}` : ""}`),
-      fetch(`/api/history${useFake ? "?fake=1" : ""}`),
+      authedFetch(`/api/cards${group ? `?group=${encodeURIComponent(group)}` : ""}`),
+      authedFetch(`/api/history${useFake ? "?fake=1" : ""}`),
     ]);
     const cardsData = await cardsRes.json();
     const histData = await histRes.json();
@@ -71,7 +73,8 @@ export default function StatsPage() {
   }, [selLogs]);
 
   return (
-    <main className="container">
+    <RequireAuth>
+      <main className="container">
       <div className="toolbar">
         <div className="controls" style={{ gap: 10 }}>
           <label className="label">
@@ -110,6 +113,7 @@ export default function StatsPage() {
 
       <h3 style={{ marginTop: 16 }}>Per-Card Grade Over Time</h3>
       <GradeSeries events={selLogs.filter((l) => l.grade !== "view").map((l) => ({ x: l.ts, grade: l.grade }))} />
-    </main>
+      </main>
+    </RequireAuth>
   );
 }

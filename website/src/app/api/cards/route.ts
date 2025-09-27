@@ -1,11 +1,14 @@
 import { NextRequest } from "next/server";
 import { loadAllCards, saveCard } from "@/lib/cards";
+import { createServerSupabase } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const group = url.searchParams.get("group");
-    const cards = await loadAllCards();
+    const auth = req.headers.get('authorization') || undefined;
+    const db = createServerSupabase(auth);
+    const cards = await loadAllCards(db);
     const filteredCards = cards.filter((c) => (group ? c.group === group : true));
     const groups = Array.from(new Set(cards.map((c) => c.group).filter(Boolean)));
     return Response.json({ cards: filteredCards, groups });
@@ -40,7 +43,9 @@ export async function POST(req: NextRequest) {
       group: group?.trim() || undefined
     };
 
-    const success = await saveCard(card);
+    const auth = req.headers.get('authorization') || undefined;
+    const db = createServerSupabase(auth);
+    const success = await saveCard(card, db);
     if (!success) {
       return new Response("Failed to save card", { status: 500 });
     }

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClipboardEvent } from "react";
 import { mdToHtml as renderMd } from "@/lib/markdown";
 import { TimeSeries, GradeSeries } from "@/components/charts";
+import RequireAuth from "@/components/RequireAuth";
+import { authedFetch } from "@/lib/authFetch";
 
 type Card = { id: string; title?: string; front: string; back: string };
 
@@ -36,7 +38,7 @@ export default function StudyPage() {
   const loadNext = async (reset = false) => {
     const params = new URLSearchParams({ count: String(20), algo });
     if (group) params.set("group", group);
-    const r = await fetch(`/api/next?${params.toString()}`);
+    const r = await authedFetch(`/api/next?${params.toString()}`);
     const data = await r.json();
     const list: Card[] = data.cards;
     if (reset) {
@@ -56,7 +58,7 @@ export default function StudyPage() {
 
   useEffect(() => {
     // fetch groups for filter
-    fetch("/api/cards").then(async (r) => {
+    authedFetch("/api/cards").then(async (r) => {
       const data = await r.json();
       setGroups(data.groups || []);
     });
@@ -71,7 +73,7 @@ export default function StudyPage() {
     if (!current) return;
     const durationMs = startTs.current ? Date.now() - startTs.current : undefined;
     startTs.current = null;
-    await fetch("/api/review", {
+    await authedFetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardId: current.id, grade, durationMs }),
@@ -148,12 +150,12 @@ export default function StudyPage() {
   useEffect(() => {
     if (current && current.id !== lastViewedId.current) {
       lastViewedId.current = current.id;
-      fetch("/api/review", {
+      authedFetch("/api/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cardId: current.id, grade: "view" }),
       }).catch(() => {});
-      fetch(`/api/history`).then(async (r) => {
+      authedFetch(`/api/history`).then(async (r) => {
         const data = await r.json();
         const logs = (data.history || [])
           .filter((l: any) => l.cardId === current.id && l.grade !== "view")
@@ -164,7 +166,8 @@ export default function StudyPage() {
   }, [current?.id]);
 
   return (
-    <main className="container">
+    <RequireAuth>
+      <main className="container">
       <div className="toolbar">
         <div className="controls">
           <label className="label">
@@ -207,7 +210,7 @@ export default function StudyPage() {
                   <button className="again" onClick={async () => {
                     if (!current) return;
                     if (!confirm(`Delete card ${current.id}?`)) return;
-                    await fetch(`/api/cards/${encodeURIComponent(current.id)}`, { method: 'DELETE' });
+                    await authedFetch(`/api/cards/${encodeURIComponent(current.id)}`, { method: 'DELETE' });
                     const [, ...rest] = queue;
                     setQueue(rest);
                     setCurrent(rest[0] ?? null);
@@ -270,7 +273,8 @@ export default function StudyPage() {
           ) : null}
         </div>
       )}
-    </main>
+      </main>
+    </RequireAuth>
   );
 }
 

@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { Card } from '@/lib/types'
 
-export async function loadAllCards(): Promise<Card[]> {
-  const { data, error } = await supabase
+export async function loadAllCards(client?: SupabaseClient): Promise<Card[]> {
+  const db = client || supabase
+  const { data, error } = await db
     .from('cards')
     .select('*')
     .order('id')
@@ -24,8 +26,9 @@ export async function loadAllCards(): Promise<Card[]> {
   }))
 }
 
-export async function saveCard(card: Omit<Card, 'path'>): Promise<boolean> {
-  const { error } = await supabase
+export async function saveCard(card: Omit<Card, 'path'>, client?: SupabaseClient): Promise<boolean> {
+  const db = client || supabase
+  const { error } = await db
     .from('cards')
     .upsert({
       id: card.id,
@@ -46,8 +49,9 @@ export async function saveCard(card: Omit<Card, 'path'>): Promise<boolean> {
   return true
 }
 
-export async function deleteCard(cardId: string): Promise<boolean> {
-  const { error } = await supabase
+export async function deleteCard(cardId: string, client?: SupabaseClient): Promise<boolean> {
+  const db = client || supabase
+  const { error } = await db
     .from('cards')
     .delete()
     .eq('id', cardId)

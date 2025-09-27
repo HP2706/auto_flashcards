@@ -1,5 +1,6 @@
 import "katex/dist/katex.min.css";
 import "./globals.css";
+import HeaderUser from "@/components/HeaderUser";
 
 export const metadata = {
   title: "Auto Flashcards",
@@ -21,6 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span style={{ opacity: 0.5 }}>|</span>
               <a href="/cards/new">New</a>
               <a href="/groups/new">New Group</a>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <HeaderUser />
             </nav>
           </header>
           {children}

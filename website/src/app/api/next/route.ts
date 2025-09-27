@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { loadAllCards } from "@/lib/cards";
 import { getAlgorithm } from "@/algorithms";
 import { buildAggregates, readHistory } from "@/lib/history";
+import { createServerSupabase } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,9 +11,11 @@ export async function GET(req: NextRequest) {
     const algoKey = searchParams.get("algo") ?? undefined;
     const group = searchParams.get("group");
 
-    const allCards = await loadAllCards();
+    const auth = req.headers.get('authorization') || undefined;
+    const db = createServerSupabase(auth);
+    const allCards = await loadAllCards(db);
     const cards = allCards.filter((c) => (group ? c.group === group : true));
-    const history = await readHistory();
+    const history = await readHistory(db);
     const aggregates = buildAggregates(history);
     const now = Date.now();
     const scheduler = getAlgorithm(algoKey ?? undefined);

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { authedFetch } from "@/lib/authFetch";
+import RequireAuth from "@/components/RequireAuth";
 
 type Card = { id: string; title?: string; front: string; back: string; group?: string };
 
@@ -14,7 +16,7 @@ export default function CardsPage() {
   const refresh = async (g = group) => {
     const p = new URLSearchParams();
     if (g) p.set("group", g);
-    const r = await fetch(`/api/cards?${p.toString()}`);
+    const r = await authedFetch(`/api/cards?${p.toString()}`);
     const data = await r.json();
     setCards(data.cards);
     setGroups(data.groups || []);
@@ -37,7 +39,8 @@ export default function CardsPage() {
   }, [cards, q]);
 
   return (
-    <main className="container">
+    <RequireAuth>
+      <main className="container">
       <div className="toolbar">
         <div className="controls">
           <label className="label">
@@ -70,6 +73,7 @@ export default function CardsPage() {
           </a>
         ))}
       </div>
-    </main>
+      </main>
+    </RequireAuth>
   );
 }

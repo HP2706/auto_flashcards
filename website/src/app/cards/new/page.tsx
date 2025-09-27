@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { authedFetch } from "@/lib/authFetch";
 import type { ClipboardEvent } from "react";
 import { mdToHtml } from "@/lib/markdown";
+import RequireAuth from "@/components/RequireAuth";
 
 function useQuery() {
   const [q, setQ] = useState<URLSearchParams>(new URLSearchParams());
@@ -64,7 +66,7 @@ export default function NewCardPage() {
 
   const onSave = async () => {
     setSaving(true);
-    const r = await fetch("/api/cards", {
+    const r = await authedFetch("/api/cards", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, group: group || undefined, front, back }),
@@ -80,7 +82,8 @@ export default function NewCardPage() {
   const backHtml = useMemo(() => mdToHtml(back), [back]);
 
   return (
-    <main className="container">
+    <RequireAuth>
+      <main className="container">
       <div className="toolbar">
         <div className="controls" style={{ gap: 8 }}>
           <a className="link" href="/cards">← Back</a>
@@ -113,6 +116,7 @@ export default function NewCardPage() {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </RequireAuth>
   );
 }

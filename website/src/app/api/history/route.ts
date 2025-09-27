@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { readHistory } from "@/lib/history";
+import { createServerSupabase } from "@/lib/supabase";
 import { loadAllCards } from "@/lib/cards";
 import { ReviewLog } from "@/lib/types";
 
@@ -25,6 +26,8 @@ function makeFakeHistory(): ReviewLog[] {
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const fake = url.searchParams.get("fake") === "1";
-  const logs = fake ? makeFakeHistory() : await readHistory();
+  const auth = req.headers.get('authorization') || undefined;
+  const db = createServerSupabase(auth);
+  const logs = fake ? makeFakeHistory() : await readHistory(db);
   return Response.json({ history: logs });
 }

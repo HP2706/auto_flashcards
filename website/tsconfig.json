@@ -23,6 +23,9 @@
       "@/components/*": [
         "src/components/*"
       ],
+      "@/hooks/*": [
+        "src/hooks/*"
+      ],
       "@/algorithms": [
         "src/algorithms/index.ts"
       ],

@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { authedFetch } from "@/lib/authFetch";
 import type { ClipboardEvent } from "react";
 import { mdToHtml } from "@/lib/markdown";
 import { GradeSeries, TimeSeries } from "@/components/charts";
+import RequireAuth from "@/components/RequireAuth";
 
 type Card = { id: string; title?: string; front: string; back: string; group?: string };
 
@@ -17,7 +19,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
   const [history, setHistory] = useState<{ ts: number; grade: string }[]>([]);
 
   useEffect(() => {
-    fetch(`/api/cards/${encodeURIComponent(params.id)}`).then(async (r) => {
+    authedFetch(`/api/cards/${encodeURIComponent(params.id)}`).then(async (r) => {
       if (r.ok) {
         const data = await r.json();
         setCard(data.card);
@@ -26,7 +28,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
         setBack(data.card?.back || "");
       }
     });
-    fetch(`/api/history`).then(async (r) => {
+    authedFetch(`/api/history`).then(async (r) => {
       const data = await r.json();
       const logs = (data.history || []).filter((l: any) => l.cardId === params.id && l.grade !== "view").sort((a: any, b: any) => a.ts - b.ts);
       setHistory(logs.map((l: any) => ({ ts: l.ts, grade: l.grade })));
@@ -81,7 +83,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
   }
 
   const onSave = async () => {
-    const r = await fetch(`/api/cards/${encodeURIComponent(params.id)}`, {
+    const r = await authedFetch(`/api/cards/${encodeURIComponent(params.id)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, front, back }),
@@ -94,7 +96,8 @@ export default function CardDetail({ params }: { params: { id: string } }) {
   };
 
   return (
-    <main className="container">
+    <RequireAuth>
+      <main className="container">
       <div className="toolbar">
         <div className="controls">
           <a className="link" href="/cards">← Back to cards</a>
@@ -115,7 +118,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
                   <button className="again" onClick={async () => {
                     if (!card) return;
                     if (!confirm(`Delete card ${card.id}?`)) return;
-                    const r = await fetch(`/api/cards/${encodeURIComponent(card.id)}`, { method: 'DELETE' });
+                    const r = await authedFetch(`/api/cards/${encodeURIComponent(card.id)}`, { method: 'DELETE' });
                     if (r.ok) window.location.href = '/cards';
                   }}>Delete</button>
                 </>
@@ -174,6 +177,7 @@ export default function CardDetail({ params }: { params: { id: string } }) {
           )}
         </div>
       )}
-    </main>
+      </main>
+    </RequireAuth>
   );
 }

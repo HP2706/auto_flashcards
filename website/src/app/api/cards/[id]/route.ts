@@ -1,10 +1,13 @@
 import { NextRequest } from "next/server";
 import { loadAllCards, saveCard, deleteCard } from "@/lib/cards";
+import { createServerSupabase } from "@/lib/supabase";
 
-export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
+export async function GET(req: NextRequest, ctx: { params: { id: string } }) {
   try {
     const { id } = ctx.params;
-    const cards = await loadAllCards();
+    const auth = req.headers.get('authorization') || undefined;
+    const db = createServerSupabase(auth);
+    const cards = await loadAllCards(db);
     const card = cards.find((c) => c.id === id);
     if (!card) return new Response("Not found", { status: 404 });
     return Response.json({ card });
@@ -17,7 +20,9 @@ export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
 export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
   try {
     const { id } = ctx.params;
-    const cards = await loadAllCards();
+    const auth = req.headers.get('authorization') || undefined;
+    const db = createServerSupabase(auth);
+    const cards = await loadAllCards(db);
     const card = cards.find((c) => c.id === id);
     if (!card) return new Response("Not found", { status: 404 });
 
@@ -34,7 +39,7 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
       back: back.trim(),
     };
 
-    const success = await saveCard(updatedCard);
+    const success = await saveCard(updatedCard, db);
     if (!success) {
       return new Response("Failed to save card", { status: 500 });
     }
@@ -46,14 +51,16 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
   }
 }
 
-export async function DELETE(_req: NextRequest, ctx: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, ctx: { params: { id: string } }) {
   try {
     const { id } = ctx.params;
-    const cards = await loadAllCards();
+    const auth = req.headers.get('authorization') || undefined;
+    const db = createServerSupabase(auth);
+    const cards = await loadAllCards(db);
     const card = cards.find((c) => c.id === id);
     if (!card) return new Response("Not found", { status: 404 });
     
-    const success = await deleteCard(id);
+    const success = await deleteCard(id, db);
     if (!success) {
       return new Response("Failed to delete card", { status: 500 });
     }

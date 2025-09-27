@@ -3,10 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 // Prefer server-side envs when available; fall back to public vars for browser
 const isServer = typeof window === 'undefined'
 
-const supabaseUrl =
-  process.env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL
+const supabaseUrl = isServer
+  ? (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL)
+  : (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL)
 
 const supabaseKey = isServer
   ? (
@@ -27,6 +26,14 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
+
+export function createServerSupabase(authHeader?: string) {
+  return createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: authHeader ? { Authorization: authHeader } : undefined,
+    },
+  })
+}
 
 export type Database = {
   public: {

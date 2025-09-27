@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { ReviewLog, CardAggregate } from '@/lib/types'
 
-export async function readHistory(): Promise<ReviewLog[]> {
-  const { data, error } = await supabase
+export async function readHistory(client?: SupabaseClient): Promise<ReviewLog[]> {
+  const db = client || supabase
+  const { data, error } = await db
     .from('review_logs')
     .select('*')
     .order('ts')
@@ -20,8 +22,9 @@ export async function readHistory(): Promise<ReviewLog[]> {
   }))
 }
 
-export async function appendHistory(log: ReviewLog): Promise<boolean> {
-  const { error } = await supabase
+export async function appendHistory(log: ReviewLog, client?: SupabaseClient): Promise<boolean> {
+  const db = client || supabase
+  const { error } = await db
     .from('review_logs')
     .insert({
       card_id: log.cardId,
