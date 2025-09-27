@@ -4,8 +4,8 @@ import { createServerSupabase } from "@/lib/supabase";
 import { loadAllCards } from "@/lib/cards";
 import { ReviewLog } from "@/lib/types";
 
-function makeFakeHistory(): ReviewLog[] {
-  const cards = loadAllCards();
+async function makeFakeHistory(): Promise<ReviewLog[]> {
+  const cards = await loadAllCards();
   const now = Date.now();
   const out: ReviewLog[] = [];
   let t = now - 1000 * 60 * 60 * 24 * 30; // 30 days ago
@@ -28,6 +28,6 @@ export async function GET(req: NextRequest) {
   const fake = url.searchParams.get("fake") === "1";
   const auth = req.headers.get('authorization') || undefined;
   const db = createServerSupabase(auth);
-  const logs = fake ? makeFakeHistory() : await readHistory(db);
+  const logs = fake ? await makeFakeHistory() : await readHistory(db);
   return Response.json({ history: logs });
 }

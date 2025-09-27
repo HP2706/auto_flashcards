@@ -25,10 +25,10 @@ if (!supabaseUrl || !supabaseKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = createClient(supabaseUrl as string, supabaseKey as string)
 
 export function createServerSupabase(authHeader?: string) {
-  return createClient(supabaseUrl, supabaseKey, {
+  return createClient(supabaseUrl as string, supabaseKey as string, {
     global: {
       headers: authHeader ? { Authorization: authHeader } : undefined,
     },

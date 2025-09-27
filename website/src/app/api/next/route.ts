@@ -4,6 +4,8 @@ import { getAlgorithm } from "@/algorithms";
 import { buildAggregates, readHistory } from "@/lib/history";
 import { createServerSupabase } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

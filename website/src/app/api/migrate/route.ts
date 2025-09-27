@@ -31,15 +31,15 @@ export async function POST(req: NextRequest) {
     let cardsMigrated = 0
     for (let i = 0; i < rows.length; i += chunkSize) {
       const chunk = rows.slice(i, i + chunkSize)
-      const { error, count } = await supabase
+      const { error } = await supabase
         .from('cards')
         .upsert(chunk)
-        .select('id', { count: 'exact', head: false })
+        .select('id')
       if (error) {
         console.error('✗ Failed to upsert card chunk:', { index: i, size: chunk.length, error })
       } else {
-        cardsMigrated += count || chunk.length
-        console.log(`✓ Upserted cards ${i + 1}-${Math.min(i + chunk.length, rows.length)} (count=${count ?? chunk.length})`)
+        cardsMigrated += chunk.length
+        console.log(`✓ Upserted cards ${i + 1}-${Math.min(i + chunk.length, rows.length)} (count=${chunk.length})`)
       }
     }
     
@@ -77,15 +77,15 @@ export async function POST(req: NextRequest) {
         }
         for (let i = 0; i < filtered.length; i += chunkSize) {
           const chunk = filtered.slice(i, i + chunkSize)
-          const { error, count } = await supabase
+          const { error } = await supabase
             .from('review_logs')
             .insert(chunk)
-            .select('id', { count: 'exact', head: false })
+            .select('id')
           if (error) {
             console.error('✗ Failed to insert history chunk:', { index: i, size: chunk.length, error })
           } else {
-            historyMigrated += count || chunk.length
-            console.log(`✓ Inserted history ${i + 1}-${Math.min(i + chunk.length, filtered.length)} (count=${count ?? chunk.length})`)
+            historyMigrated += chunk.length
+            console.log(`✓ Inserted history ${i + 1}-${Math.min(i + chunk.length, filtered.length)} (count=${chunk.length})`)
           }
         }
       } catch (e) {
