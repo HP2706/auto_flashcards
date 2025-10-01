@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
 import crypto from "node:crypto";
+import { createServerSupabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,15 +19,23 @@ export async function POST(req: NextRequest) {
     else if (mime.includes("gif")) ext = ".gif";
     else if (mime.includes("svg")) ext = ".svg";
     else if (mime.includes("webp")) ext = ".webp";
-    const filesDir = path.join(process.cwd(), "public", "files");
-    fs.mkdirSync(filesDir, { recursive: true });
-    const name = `${hash}${ext}`;
-    const dest = path.join(filesDir, name);
-    if (!fs.existsSync(dest)) fs.writeFileSync(dest, buf);
+
+    // Upload to Supabase Storage bucket
+    const authHeader = req.headers.get("authorization") || undefined;
+    const supabase = createServerSupabase(authHeader);
+    const path = `uploads/${hash}${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("flashcard-images")
+      .upload(path, buf, { contentType: mime, upsert: true });
+    if (uploadError) {
+      console.error("Upload to storage failed:", uploadError);
+      return new Response("Upload failed", { status: 500 });
+    }
+
+    const { data: pub } = supabase.storage.from("flashcard-images").getPublicUrl(path);
     const isImage = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].includes(ext);
-    return Response.json({ ok: true, path: `files/${name}`, url: `/files/${name}`, isImage });
+    return Response.json({ ok: true, path, url: pub.publicUrl, isImage });
   } catch (e) {
     return new Response("Upload failed", { status: 500 });
   }
 }
-

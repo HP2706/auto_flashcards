@@ -2,12 +2,14 @@ import { supabase } from '@/lib/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Card } from '@/lib/types'
 
-export async function loadAllCards(client?: SupabaseClient): Promise<Card[]> {
+export async function loadAllCards(client?: SupabaseClient, opts?: { group?: string }): Promise<Card[]> {
   const db = client || supabase
-  const { data, error } = await db
+  let q = db
     .from('cards')
-    .select('*')
+    .select('id,title,front,back,front_images,back_images,group')
     .order('id')
+  if (opts?.group) q = q.eq('group', opts.group)
+  const { data, error } = await q
   
   if (error) {
     console.error('Failed to load cards:', error)

@@ -15,8 +15,7 @@ export async function GET(req: NextRequest) {
 
     const auth = req.headers.get('authorization') || undefined;
     const db = createServerSupabase(auth);
-    const allCards = await loadAllCards(db);
-    const cards = allCards.filter((c) => (group ? c.group === group : true));
+    const cards = await loadAllCards(db, { group: group || undefined });
     const history = await readHistory(db);
     const aggregates = buildAggregates(history);
     const now = Date.now();

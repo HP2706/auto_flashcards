@@ -32,12 +32,12 @@ alter table public.profiles enable row level security;
 -- Allow a logged in user to read their own profile
 drop policy if exists profiles_select_own on public.profiles;
 create policy profiles_select_own on public.profiles
-  for select using (auth.uid() = id);
+  for select using ((select auth.uid()) = id);
 
 -- Allow a logged in user to update their own profile
 drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+  for update using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
 -- Optional: Allow reading everyone’s profile (public names)
 -- create policy if not exists profiles_select_all on public.profiles for select using (true);
@@ -71,8 +71,8 @@ alter table public.review_logs enable row level security;
 
 drop policy if exists cards_owner_access on public.cards;
 create policy cards_owner_access on public.cards
-  for all using (user_id = auth.uid()) with check (coalesce(user_id, auth.uid()) = auth.uid());
+  for all using (user_id = (select auth.uid())) with check (coalesce(user_id, (select auth.uid())) = (select auth.uid()));
 
 drop policy if exists review_logs_owner_access on public.review_logs;
 create policy review_logs_owner_access on public.review_logs
-  for all using (user_id = auth.uid()) with check (coalesce(user_id, auth.uid()) = auth.uid());
+  for all using (user_id = (select auth.uid())) with check (coalesce(user_id, (select auth.uid())) = (select auth.uid()));

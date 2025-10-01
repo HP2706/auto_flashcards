@@ -110,7 +110,8 @@ export default function StudyPage() {
           const r = await fetch("/api/upload", { method: "POST", body: fd });
           if (r.ok) {
             const data = await r.json();
-            const md = data.isImage ? `![Image](${data.path})` : `[File](${data.path})`;
+            const link = data.url || data.path; // prefer absolute URL from storage
+            const md = data.isImage ? `![Image](${link})` : `[File](${link})`;
             const el = e.target as HTMLTextAreaElement;
             const { next, caret } = insertAtCursor(el, md);
             if (which === "front") setEditFront(next);

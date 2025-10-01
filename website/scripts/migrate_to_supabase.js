@@ -22,6 +22,17 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// Parse CLI args for target user
+const DEFAULT_USER_ID = 'e0c93724-e737-40fc-bfc7-7ca63e0ca9ce'
+const argv = process.argv.slice(2)
+function getArg(name) {
+  const p = `--${name}=`
+  const hit = argv.find(a => a.startsWith(p))
+  return hit ? hit.slice(p.length) : undefined
+}
+const TARGET_USER_ID = getArg('user') || process.env.MIGRATE_USER_ID || DEFAULT_USER_ID
+console.log(`[migrate] Target user: ${TARGET_USER_ID}`)
+
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 async function withRetry(fn, { tries = 3, baseDelay = 300 } = {}) {
@@ -64,7 +75,10 @@ function parseCardFromFile(filePath, cardsDir) {
     const title = titleMatch ? titleMatch[1].trim() : undefined;
     const front = extractSection(raw, "Front") ?? "";
     const back = extractSection(raw, "Back") ?? "";
-    const id = path.basename(filePath);
+    // Use path relative to cardsDir to avoid basename collisions.
+    // Replace separators to keep IDs safe for URL params (no slashes in Next.js [id]).
+    const relPath = path.relative(cardsDir, filePath);
+    const id = relPath.split(path.sep).join('__');
     const rel = path.relative(cardsDir, path.dirname(filePath));
     const group = rel && rel !== "." ? rel.split(path.sep)[0] : undefined;
     return { id, title, front, back, group };
@@ -89,7 +103,8 @@ async function migrateCards() {
   const files = walk(cardsDir)
   const cards = files
     .map(file => parseCardFromFile(file, cardsDir))
-    .filter(card => card && card.front && card.back)
+    // Keep cards even if Front/Back are empty strings to avoid drops
+    .filter(card => !!card)
   
   console.log(`Found ${cards.length} cards to migrate`)
   
@@ -99,6 +114,8 @@ async function migrateCards() {
     front: c.front,
     back: c.back,
     group: c.group || null,
+    // Attach to a specific user for RLS policies
+    ...(TARGET_USER_ID ? { user_id: TARGET_USER_ID } : {}),
   }))
   const chunkSize = 200
   for (let i = 0; i < rows.length; i += chunkSize) {
@@ -150,7 +167,8 @@ async function migrateHistory() {
         card_id: log.cardId,
         ts: log.ts,
         grade: log.grade,
-        duration_ms: log.durationMs || null
+        duration_ms: log.durationMs || null,
+        ...(TARGET_USER_ID ? { user_id: TARGET_USER_ID } : {}),
       }))
     const chunkSize = 500
     for (let i = 0; i < rows.length; i += chunkSize) {
@@ -176,10 +194,38 @@ async function migrateHistory() {
   }
 }
 
+async function wipeTablesIfRequested() {
+  const args = new Set(process.argv.slice(2));
+  const shouldWipe = args.has('--wipe') || process.env.WIPE === '1';
+  if (!shouldWipe) return false;
+  console.warn('WIPE requested: deleting all rows from review_logs and cards');
+  try {
+    // Delete history first due to FK dependencies
+    let res = await supabase
+      .from('review_logs')
+      .delete()
+      .neq('id', '');
+    if (res.error) console.error('Failed to wipe review_logs:', res.error);
+
+    res = await supabase
+      .from('cards')
+      .delete()
+      .neq('id', '');
+    if (res.error) console.error('Failed to wipe cards:', res.error);
+
+    console.log('WIPE completed');
+    return true;
+  } catch (e) {
+    console.error('WIPE failed:', e);
+    return false;
+  }
+}
+
 async function main() {
   console.log('Starting migration to Supabase...')
   
   try {
+    await wipeTablesIfRequested()
     await migrateCards()
     await migrateHistory()
     console.log('Migration completed successfully!')

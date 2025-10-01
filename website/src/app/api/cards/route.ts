@@ -8,10 +8,9 @@ export async function GET(req: NextRequest) {
     const group = url.searchParams.get("group");
     const auth = req.headers.get('authorization') || undefined;
     const db = createServerSupabase(auth);
-    const cards = await loadAllCards(db);
-    const filteredCards = cards.filter((c) => (group ? c.group === group : true));
+    const cards = await loadAllCards(db, { group: group || undefined });
     const groups = Array.from(new Set(cards.map((c) => c.group).filter(Boolean)));
-    return Response.json({ cards: filteredCards, groups });
+    return Response.json({ cards, groups });
   } catch (error) {
     console.error('Failed to load cards:', error);
     return new Response("Failed to load cards", { status: 500 });
